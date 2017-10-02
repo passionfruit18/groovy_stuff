@@ -14,6 +14,9 @@ class BitsAndBobsSpec extends Specification {
     def "numbers"() {
         expect:
         3%2 == 1
+        Math.pow(10,4) == 10000.0
+        10.4.intValue() == 10
+        10.4 as Integer == 10
     }
     def "adding to list"() {
         when:
@@ -64,7 +67,7 @@ class BitsAndBobsSpec extends Specification {
         assert a==b
     }
     def "list stuff"() {
-
+        for (Integer i: (1..4)) {println i}
         expect:
         [].join('a') == ''
         [1,3,3,45,66].collate(2) == [[1, 3], [3, 45], [66]]
@@ -98,6 +101,7 @@ class BitsAndBobsSpec extends Specification {
         !(0 as boolean)
         !([] as boolean)
         !(null as boolean)
+        true && true
     }
     class C {
         String blah(String x = "hello") { x }
@@ -124,6 +128,7 @@ class BitsAndBobsSpec extends Specification {
     def "string stuff"() {
         expect:
         "DATE".contains('DATE')
+        ['a', 'b'].contains('a')
     }
     trait X {
         String x() {
@@ -192,6 +197,11 @@ class BitsAndBobsSpec extends Specification {
     def "find"() {
         expect:
         'uclh_raw_import_from_cancer_v6.xls'.find(/(.*)_raw_import.*/) { match, firstWord -> firstWord } == 'uclh'
+        '121.1'.find(/(.*)\./){match, firstSection -> firstSection} == '121'
+    }
+    def "split"() {
+        expect:
+        'A_B'.split(/_/)[0] == 'A'
     }
 
 
@@ -241,6 +251,7 @@ class BitsAndBobsSpec extends Specification {
         expect:
         true
     }
+    @Ignore // scanners just don't work in test
     def "nextLine"() {
         Scanner scanner = new Scanner(System.in)
         scanner.nextLine()
@@ -251,6 +262,65 @@ class BitsAndBobsSpec extends Specification {
         expect:
         true
     }
+    def "collectMany"() {
+        when:
+        (1..15).each{benchmarkCollectMany(Math.pow(10,it) as Integer)}
+        /*
+        Collectmany of 10.0 items took 12 time
+        Collectmany of 100.0 items took 2 time
+        Collectmany of 1000.0 items took 5 time
+        Collectmany of 10000.0 items took 16 time
+        Collectmany of 100000.0 items took 58 time
+        Collectmany of 1000000.0 items took 204 time
+        Collectmany of 1.0E7 items took 1968 time
+        Collectmany of 1.0E8 items took 49250 time
+
+        java.lang.OutOfMemoryError: Java heap space
+        seems to be quadratic.
+         */
+        then:
+            true
+        expect:
+        [1,2].collectMany {i ->
+            if (i==1) {
+                return [i]
+            }
+            else {
+                return []
+            }
+
+        } == [1]
+    }
+    void benchmarkCollectMany(Integer n) {
+        long time = benchmark {
+            (1..n).collectMany {[it]}
+        }
+        println "Collectmany of $n items took $time time"
+    }
+    long benchmark(Closure closure)  {
+        long start = System.currentTimeMillis()
+        closure.call()
+        long now = System.currentTimeMillis()
+        now - start
+    }
+
+    def "generate stuff for risk repository"() {
+
+        ["region", "country", "ringfence", "typeOfBank", "departmentOfBank"].each {s ->
+            println("result.put(\"$s\", riskInstance.get${s.capitalize()}());")
+        }
+        println ""
+        ["preControlSeverity", "postControlSeverity"].each{s ->
+            println("<p className=\"card-text\">$s: {riskType.${s}}</p>")
+        }
+        println ""
+        ["region", "country", "ringfence", "typeOfBank", "departmentOfBank"].each {s ->
+            println("<p className=\"card-text\">${s.capitalize()}: {riskInstance.${s}}</p>")
+        }
+        expect:
+        true
+    }
+
     public static void main(String... args) {
 
     }
