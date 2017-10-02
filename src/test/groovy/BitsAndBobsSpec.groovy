@@ -1,3 +1,7 @@
+import com.fasterxml.uuid.EthernetAddress
+import com.fasterxml.uuid.Generators
+import com.fasterxml.uuid.UUIDType
+import com.fasterxml.uuid.impl.TimeBasedGenerator
 import groovy.transform.CompileStatic
 import groovy.transform.EqualsAndHashCode
 import groovy.transform.ToString
@@ -317,9 +321,45 @@ class BitsAndBobsSpec extends Specification {
         ["region", "country", "ringfence", "typeOfBank", "departmentOfBank"].each {s ->
             println("<p className=\"card-text\">${s.capitalize()}: {riskInstance.${s}}</p>")
         }
+        println ""
+        TimeBasedGenerator gen = Generators.timeBasedGenerator(EthernetAddress.fromInterface())
+        int n = 0
+        ["Ringfenced", "Non-ringfenced"].each {ringfence ->
+            ["Retail & Wealth Bank", "Private Bank", "Corporate Bank", "Banking & Markets"].each {typeOfBank ->
+                ["HR", "Large Corporates", " Private Clients", " Trading Desk", " Central Functions", " Retail Clients", " Legal", " Wealth Clients", " Key Clients", "Small Corporates"].each {departmentOfBank ->
+                    ["Turkey": "MENA", "China": "APAC", "UK": "EMEA", "Germany": "EMEA", "France": "EMEA", "Brazil": "LATAM", "Argentina": "LATAM", "USA": "USA"].each {country, region ->
+                        String riskInstanceVar = "RiskInstance$n"
+                        UUID uuid = gen.generate()
+                        println """
+($riskInstanceVar:RiskInstance {name: 'Mis-selling to Customers', preControlSeverity: 'High damage, unlikely', postControlSeverity: 'Low damage, unlikely', uuid: "${uuid.toString()}",reviewDate:'1-6 Months', region: '$region', country: '$country', ringfence: '$ringfence', typeOfBank: '$typeOfBank', departmentOfBank: '$departmentOfBank'}),
+    ($riskInstanceVar)-[:INSTANCE_OF]->(Risk101),
+    (Control1)-[:CONTROLS_RISK {effectiveness:'Needs Improvement'}]->($riskInstanceVar),
+    (Control2)-[:CONTROLS_RISK {effectiveness:'Effective'}]->($riskInstanceVar),
+    (Control3)-[:CONTROLS_RISK {effectiveness:'Ineffective'}]->($riskInstanceVar),
+    (Control4)-[:CONTROLS_RISK {effectiveness:'Needs Improvement'}]->($riskInstanceVar),
+    (Control5)-[:CONTROLS_RISK {effectiveness:'Effective'}]->($riskInstanceVar),"""
+                        n += 1
+                    }
+            }
+
+        }
+
+        }
         expect:
         true
     }
+
+    def "UUID"() {
+        println Generators.timeBasedGenerator(EthernetAddress.fromInterface()).generate()
+        expect:true
+    }
+    def "++"() {
+        int n = 0
+        n += 1
+        expect:
+        n == 1
+    }
+
 
     public static void main(String... args) {
 
